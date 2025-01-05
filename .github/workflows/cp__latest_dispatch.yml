@@ -1,8 +1,7 @@
 name: Latest Version - Workflow Dispatch
 
 on:
-  workflow_dispatch:
-
+   workflow_dispatch:
 jobs:
   scrape_fe_version:
     runs-on: windows-latest
