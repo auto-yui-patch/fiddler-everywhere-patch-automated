@@ -17,13 +17,27 @@ jobs:
     if: ${{ github.event.repository.fork }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Clean issue notice
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: 'close-issues'
-          labels: '🚨 Sync Fail'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          gh issue list \
+            --repo "${{ github.repository }}" \
+            --state open \
+            --label "🚨 Sync Fail" \
+            --json number \
+            --jq '.[].number' |
+          while read -r issue_number; do
+            if [ -n "$issue_number" ]; then
+              gh issue close "$issue_number" \
+                --repo "${{ github.repository }}" \
+                --comment "Upstream sync is running again; closing stale failure notice."
+            fi
+          done
 
       - name: Sync upstream changes
         id: sync
@@ -37,14 +51,22 @@ jobs:
 
       - name: Sync check
         if: failure()
-        uses: actions-cool/issues-helper@v3
-        with:
-          actions: 'create-issue'
-          title: '🚨 Sync Fail | 同步失败'
-          labels: '🚨 Sync Fail'
-          body: |
-            Due to a change in the workflow file of the upstream repository, GitHub has automatically suspended the scheduled automatic update. You need to manually sync your fork. 
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
 
-            由于上游仓库的工作流文件发生了更改，GitHub 已自动暂停了计划的自动更新。您需要手动同步您的分叉仓库。
+          body="$(mktemp)"
+          cat > "$body" <<'EOF'
+          Due to a change in the workflow file of the upstream repository, GitHub has automatically suspended the scheduled automatic update. You need to manually sync your fork.
 
-            ![](https://github-production-user-asset-6210df.s3.amazonaws.com/17870709/273954625-df80c890-0822-4ac2-95e6-c990785cbed5.png)
+          由于上游仓库的工作流文件发生了更改，GitHub 已自动暂停了计划的自动更新。您需要手动同步您的分叉仓库。
+
+          ![](https://github-production-user-asset-6210df.s3.amazonaws.com/17870709/273954625-df80c890-0822-4ac2-95e6-c990785cbed5.png)
+          EOF
+
+          gh issue create \
+            --repo "${{ github.repository }}" \
+            --title "🚨 Sync Fail | 同步失败" \
+            --label "🚨 Sync Fail" \
+            --body-file "$body"
