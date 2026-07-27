@@ -14,6 +14,7 @@ on:
         options:
           - Windows (x86_64)
           - Linux (x86_64)
+          - Mac (arm64)
       patch-server-port:
         description: 'Patch server port (useful for resolving port conflicts)'
         required: true
@@ -331,9 +332,10 @@ jobs:
     runs-on: mac-latest
     needs: 
       - validate-version
+      - init_os_arch
 
     env: 
-      ARCH_CODE: ${{ github.event.inputs.arch_code }}
+      ARCH_CODE: ${{ needs.init_os_arch.outputs.arch_code }}
 
     steps:
       - name: Build URL & Download
@@ -364,9 +366,10 @@ jobs:
             exit 1
           }
 
-      - name: Extract AppImage 
+      - name: Extract DMG
         run: |
-          hdiutil attach FiddlerEverywhere.dmg
+          New-Item -ItemType Directory -Path "fe_app" -Force
+          hdiutil attach FiddlerEverywhereSetup.dmg
           cp -R /Volumes/FiddlerEverywhere/* ./fe_app/
 
       - name: List fe_app
