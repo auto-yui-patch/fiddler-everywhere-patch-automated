@@ -1,5 +1,7 @@
 name: Custom Version - Workflow Dispatch
 
+permissions: {}
+
 on:
   workflow_dispatch:
     inputs:

@@ -1,5 +1,7 @@
 name: Latest Version - Workflow Dispatch
 
+permissions: {}
+
 on:
   workflow_dispatch:
     inputs:
